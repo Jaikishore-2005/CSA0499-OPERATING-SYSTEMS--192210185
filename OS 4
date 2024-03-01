@@ -1,52 +1,86 @@
-#include<stdio.h>
-int main()
-{
- int bt[20],p[20],wt[20],tat[20],i,j,n,total=0,pos,temp;
- float avg_wt,avg_tat;
- printf("Enter number of process:");
- scanf("%d",&n);
- printf("nEnter Burst Time:n");
- for(i=0;i<n;i++)
- {
- printf("p%d:",i+1);
- scanf("%d",&bt[i]);
- p[i]=i+1;
- }
- for(i=0;i<n;i++)
- {
- pos=i;
- for(j=i+1;j<n;j++)
- {
- if(bt[j]<bt[pos])
- pos=j;
- }
- temp=bt[i];
- bt[i]=bt[pos];
- bt[pos]=temp;
+#include <stdio.h>
+#include <stdlib.h>
 
- temp=p[i];
- p[i]=p[pos];
- p[pos]=temp;
- }
- wt[0]=0;
- for(i=1;i<n;i++)
- {
- wt[i]=0;
- for(j=0;j<i;j++)
- wt[i]+=bt[j];
+// Structure to represent a process
+struct Process {
+    int id;          // Process ID
+    int burst_time;  // Burst time (execution time)
+};
 
- total+=wt[i];
- }
- avg_wt=(float)total/n;
- total=0;
- printf("nProcesst Burst Time tWaiting TimetTurnaround Time");
- for(i=0;i<n;i++)
- {
- tat[i]=bt[i]+wt[i];
- total+=tat[i];
- printf("np%dtt %dtt %dttt%d",p[i],bt[i],wt[i],tat[i]);
- }
- avg_tat=(float)total/n;
- printf("nnAverage Waiting Time=%f",avg_wt);
- printf("nAverage Turnaround Time=%fn",avg_tat);
+// Structure to represent a priority queue node
+struct PQNode {
+    struct Process process; // Process information
+    struct PQNode* next;    // Pointer to the next node in the priority queue
+};
+
+// Function to create a new priority queue node
+struct PQNode* createNode(struct Process process) {
+    struct PQNode* newNode = (struct PQNode*)malloc(sizeof(struct PQNode));
+    newNode->process = process;
+    newNode->next = NULL;
+    return newNode;
+}
+
+// Function to insert a process into the priority queue based on its burst time
+void insert(struct PQNode** front, struct Process process) {
+    struct PQNode* newNode = createNode(process);
+    struct PQNode* temp = *front;
+    struct PQNode* prev = NULL;
+
+    // Traverse the priority queue to find the appropriate position to insert
+    while (temp != NULL && temp->process.burst_time < process.burst_time) {
+        prev = temp;
+        temp = temp->next;
+    }
+
+    // If the process is to be inserted at the beginning
+    if (prev == NULL) {
+        newNode->next = *front;
+        *front = newNode;
+    } else { // Insertion in between or at the end
+        prev->next = newNode;
+        newNode->next = temp;
+    }
+}
+
+// Function to remove and return the process with the smallest burst time from the priority queue
+struct Process dequeue(struct PQNode** front) {
+    if (*front == NULL) {
+        printf("Priority queue is empty.\n");
+        exit(1);
+    }
+
+    struct PQNode* temp = *front;
+    struct Process process = temp->process;
+    *front = (*front)->next;
+    free(temp);
+    return process;
+}
+
+int main() {
+    int n, i;
+
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    struct PQNode* front = NULL;
+
+    // Input burst time for each process and insert into the priority queue
+    for (i = 0; i < n; i++) {
+        struct Process process;
+        printf("Enter burst time for process %d: ", i + 1);
+        scanf("%d", &process.burst_time);
+        process.id = i + 1;
+        insert(&front, process);
+    }
+
+    printf("\nProcess execution order:\n");
+
+    // Dequeue processes from the priority queue and execute them
+    while (front != NULL) {
+        struct Process next_process = dequeue(&front);
+        printf("Process %d (Burst Time: %d)\n", next_process.id, next_process.burst_time);
+    }
+
+    return 0;
 }
